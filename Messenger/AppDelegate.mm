@@ -268,6 +268,33 @@ static void NetReachCallback(SCNetworkReachabilityRef target,
   su.automaticallyChecksForUpdates = YES;
   [su performSelector:@selector(checkForUpdatesInBackground) withObject:nil afterDelay:1];
 
+  // Set dpr cookie to the highest display scale
+  float displayScale = 1;
+  if ([[NSScreen mainScreen] respondsToSelector:@selector(backingScaleFactor)]) {
+    for (NSScreen *scr in [NSScreen screens]) {
+      float scale = [scr backingScaleFactor];
+      if (scale > displayScale)
+        displayScale = scale;
+    }
+  }
+  
+  NSDate *expiresDate = [[NSCalendar currentCalendar]
+                         dateByAddingUnit:NSCalendarUnitYear
+                         value:1
+                         toDate:[NSDate date]
+                         options:0];
+
+  NSHTTPCookie *dprCookie = [NSHTTPCookie cookieWithProperties:
+                             [NSDictionary dictionaryWithObjectsAndKeys:
+                              @".messenger.com", NSHTTPCookieDomain,
+                              @"/", NSHTTPCookiePath,
+                              @"dpr", NSHTTPCookieName,
+                              [NSString stringWithFormat:@"%.0f", displayScale], NSHTTPCookieValue,
+                              expiresDate, NSHTTPCookieExpires,
+                              nil]];
+
+  [[NSHTTPCookieStorage sharedHTTPCookieStorage] setCookie:dprCookie];
+
   [self reloadFromServer:self];
   [self initNetReachObservation];
 }
